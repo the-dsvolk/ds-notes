@@ -1,0 +1,59 @@
+---
+description: Python tooling standards for this project
+globs: ["*.py", "pyproject.toml", "requirements.txt"]
+---
+
+# Python Tooling
+
+This project uses modern Python tooling:
+
+## Python Version
+
+- This project requires **Python 3.12**
+- When creating virtual environments, ensure Python 3.12 is used
+- Use `uv venv --python 3.12` to create a virtual environment with the correct version
+
+## Package Management: uv
+
+- Always use `uv` for package installation and dependency management
+- Use `uv pip install` instead of `pip install`
+- Use `uv venv` to create virtual environments
+- Use `uv sync` to sync dependencies from pyproject.toml or requirements.txt
+
+Examples:
+```bash
+# Create virtual environment
+uv venv
+
+# Install dependencies
+uv pip install -r requirements.txt
+
+# Add a new package
+uv pip install <package-name>
+
+# Sync from pyproject.toml
+uv sync
+```
+
+## Linting and Formatting: ruff
+
+- Always use `ruff` for linting and formatting Python code
+- Use `ruff check` for linting
+- Use `ruff format` for code formatting
+- Do NOT use pylint, flake8, black, or isort - ruff replaces all of these
+
+Examples:
+```bash
+# Check for linting issues
+ruff check .
+
+# Auto-fix linting issues
+ruff check --fix .
+
+# Format code
+ruff format .
+```
+
+## Configuration
+
+Prefer configuring ruff in `pyproject.toml` under `[tool.ruff]` section.

@@ -1,0 +1,9 @@
+pandas
+pyarrow
+jupyter
+ipykernel
+statsmodels
+plotly
+scikit-learn
+pmdarima
+prophet
