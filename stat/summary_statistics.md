@@ -7,6 +7,7 @@
 | **Mean** | $\bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i$ | $\mu_x$ |
 | **Variance** | $s_x^2 = \frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})^2$ | $\sigma_x^2$ |
 | **Standard Deviation** | $s_x = \sqrt{\frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})^2}$ | $\sigma_x$ |
+| **Coefficient of Variation** | $CV = \frac{s_x}{\bar{x}}$ | $\frac{\sigma_x}{\mu_x}$ |
 | **Covariance** | $s_{xy} = \frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})(y_i - \bar{y})$ | $\sigma_{xy}$ |
 | **Correlation** | $r = \frac{s_{xy}}{s_x \cdot s_y}$ | $\rho$ |
 
@@ -79,6 +80,45 @@ Small σ (tight):              Large σ (spread):
     Same mean (μ), but very different spreads!
 ```
 
+---
+
+## Coefficient of Variation (CV)
+
+The **coefficient of variation** is the ratio of standard deviation to the mean, expressing variability as a proportion of the average:
+
+$$CV = \frac{\sigma}{\mu} \quad \text{or as percentage:} \quad CV\% = \frac{\sigma}{\mu} \times 100$$
+
+### Why Use CV?
+
+Standard deviation alone doesn't tell you if variability is "high" or "low" — it depends on the scale. CV normalizes this, making it **unit-free** and comparable across different datasets.
+
+### Example: Comparing Two Processes
+
+| Process | Mean (μ) | Std Dev (σ) | CV |
+|---------|----------|-------------|-----|
+| Job arrivals (per hour) | 100 | 30 | 0.30 |
+| Job duration (seconds) | 500 | 30 | 0.06 |
+
+Both have σ = 30, but:
+- Arrivals: CV = 0.30 → **high variability** (30% of mean)
+- Duration: CV = 0.06 → **low variability** (6% of mean)
+
+### Visual: Same σ, Different CV
+
+```
+High CV (small mean):           Low CV (large mean):
+
+σ = 30, μ = 100                 σ = 30, μ = 500
+CV = 0.30                       CV = 0.06
+
+    ▄███▄                              ▄███▄
+   ███████                            ███████
+━━━━━┿━━━━━━━━━━━━━━━━━━━    ━━━━━━━━━━━━━━━━━━━┿━━━━
+   100                                        500
+
+  ←─ 30 ─→                              ←─ 30 ─→
+  (30% of μ)                            (6% of μ)
+```
 ---
 
 ## Covariance Between Two Datasets

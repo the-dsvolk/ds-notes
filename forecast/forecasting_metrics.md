@@ -49,6 +49,18 @@ rmse = np.sqrt(mean_squared_error(y_true, y_pred))
 
 ---
 
+## Statsmodels Usage
+
+```python
+from statsmodels.tools.eval_measures import mse, rmse, meanabs
+
+mae = meanabs(y_true, y_pred)
+mse_val = mse(y_true, y_pred)
+rmse_val = rmse(y_true, y_pred)
+```
+
+---
+
 ## Comparison
 
 | Metric | Units | Sensitivity to Outliers |
