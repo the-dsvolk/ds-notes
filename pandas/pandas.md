@@ -1,6 +1,70 @@
 # Pandas
 
+## Selecting Data: loc and iloc
+
+### iloc - Integer Location (position-based)
+
+```python
+# Select single row by position
+df.iloc[0]          # First row (as Series)
+df.iloc[-1]         # Last row
+
+df.iloc[[0, 2], [1, 3]]  # Rows 0,2 and columns 1,3
+```
+
+### loc - Label-based (uses index/column names)
+
+```python
+# Select single row by label
+df.loc['row_a']           # Row with index 'row_a'
+
+# Select multiple rows
+df.loc['row_a':'row_c']   # Rows from 'row_a' to 'row_c' (inclusive!)
+df.loc[['row_a', 'row_c']]
+
+# Boolean selection (filtering)
+df.loc[df['age'] > 30]                        # Rows where age > 30
+
+```
+
+### Key Differences
+
+| Feature | iloc | loc |
+|---------|------|-----|
+| Index type | Integer position | Label/name |
+| Slicing | Excludes end (`0:3` → 0,1,2) | Includes end (`'a':'c'` → a,b,c) |
+| Boolean | Not supported | Supported |
+
+### Common Patterns
+
+```python
+# Get last N rows
+df.iloc[-5:]
+
+# Get first value of a column
+df['col'].iloc[0]
+
+# Update values with loc
+df.loc[df['status'] == 'pending', 'status'] = 'complete'
+
+# Filter and select columns
+df.loc[(df['age'] > 25) & (df['city'] == 'NYC'), ['name', 'age']]
+```
+
 ## Handling NaN Values
+
+### Select rows with NaN
+
+```python
+# Rows where any column is NaN
+df[df.isna().any(axis=1)]
+
+# Rows where specific column is NaN
+df[df['col'].isna()]
+
+# Rows where specific column is NOT NaN
+df[df['col'].notna()]
+```
 
 ### Delete rows with NaN
 
@@ -178,4 +242,110 @@ result = pd.merge(orders, users, on='user_id', how='left')
 # 0         1      101      50  Alice
 # 1         2      102      75    Bob
 # 2         3      101      30  Alice
+```
+
+## DateTime Operations
+
+### Convert to DateTime
+
+```python
+# Convert column to datetime
+df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+# Parse with specific format (faster)
+df['date'] = pd.to_datetime(df['date_str'], format='%Y-%m-%d')
+
+# Set datetime column as index
+df = df.set_index('timestamp')
+```
+
+### Extract Date Components
+
+```python
+# From column
+df['year'] = df['timestamp'].dt.year
+df['month'] = df['timestamp'].dt.month
+df['day'] = df['timestamp'].dt.day
+df['hour'] = df['timestamp'].dt.hour
+df['day_of_week'] = df['timestamp'].dt.dayofweek  # 0=Monday
+
+# From index
+df['date'] = df.index.date
+df['hour'] = df.index.hour
+```
+
+### normalize() - Strip Time, Keep Date
+
+`normalize()` sets the time component to midnight (00:00:00), keeping only the date. Useful for grouping by day.
+
+```python
+# Before: 2025-01-24 14:35:22
+# After:  2025-01-24 00:00:00
+
+# On a DatetimeIndex
+df.index = df.index.normalize()
+
+# On a column
+df['date'] = df['timestamp'].dt.normalize()
+```
+
+### GroupBy with DateTime
+
+```python
+# Group by date (using normalize)
+daily_totals = df.groupby(df.index.normalize()).agg({
+    'value': 'sum',
+    'count': 'count'
+})
+
+# Group by date from column
+df.groupby(df['timestamp'].dt.normalize())['sales'].sum()
+
+# Alternative: use dt.date (returns date objects, not datetime)
+df.groupby(df['timestamp'].dt.date)['sales'].sum()
+
+# Group by hour of day
+df.groupby(df['timestamp'].dt.hour)['requests'].mean()
+
+# Group by day of week
+df.groupby(df['timestamp'].dt.dayofweek)['traffic'].sum()
+```
+
+### Resample (Time-based GroupBy)
+
+```python
+# Requires DatetimeIndex
+df = df.set_index('timestamp')
+
+# Resample to hourly
+df.resample('H').sum()
+
+# Resample to daily
+df.resample('D').mean()
+
+# Common frequencies: 'T'=minute, 'H'=hour, 'D'=day, 'W'=week, 'M'=month
+```
+
+### Example: Daily Summary from Timestamped Logs
+
+```python
+logs = pd.DataFrame({
+    'timestamp': pd.to_datetime([
+        '2025-01-24 10:15:00', '2025-01-24 14:30:00',
+        '2025-01-24 18:45:00', '2025-01-25 09:00:00'
+    ]),
+    'duration': [120, 45, 90, 60]
+})
+
+# Group by day using normalize()
+daily = logs.groupby(logs['timestamp'].dt.normalize()).agg(
+    total_duration=('duration', 'sum'),
+    job_count=('duration', 'count'),
+    avg_duration=('duration', 'mean')
+)
+
+#                      total_duration  job_count  avg_duration
+# timestamp
+# 2025-01-24 00:00:00            255          3          85.0
+# 2025-01-25 00:00:00             60          1          60.0
 ```
