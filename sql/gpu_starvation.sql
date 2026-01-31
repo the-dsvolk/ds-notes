@@ -13,6 +13,7 @@ The Goal:
  Filter for Safety-Critical jobs (Priority 1) that waited >600 seconds.
  Identify if the cluster was "Saturated" (>4,750 GPUs used) at the time they were waiting.
 */
+WITH ConcurrencyTimeline AS (
     -- Step 1: Standard Concurrency Pattern
     SELECT 
         event_time,

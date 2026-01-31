@@ -60,7 +60,21 @@ WHERE ...
 
 ## 4. Window Functions with ROW_NUMBER()
 
-Assign row numbers within partitions for "get latest" queries:
+Assign row numbers within partitions for "get latest" queries.
+
+### PARTITION BY vs No PARTITION BY
+
+| City | Sales | `PARTITION BY city ORDER BY sales` | `ORDER BY city, sales` |
+|------|-------|-----------------------------------|------------------------|
+| NY | 500 | 1 (First in NY) | 1 |
+| NY | 800 | 2 (Second in NY) | 2 |
+| SF | 300 | 1 (Count resets for SF!) | 3 |
+| SF | 600 | 2 (Second in SF) | 4 |
+
+- **With PARTITION BY**: Row number resets to 1 for each group
+- **Without PARTITION BY**: Continuous numbering across all rows
+
+### Example: Get Latest Row Per Group
 
 ```sql
 WITH ranked_runs AS (
