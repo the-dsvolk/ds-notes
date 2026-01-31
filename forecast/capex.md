@@ -55,3 +55,34 @@ Implement a **Preemption Scheduler** that evicts lower-priority jobs (e.g., Prio
 - Analysis shows preemption would recover sufficient compute hours
 
 SQL-based analysis can quantify the impact of each strategy—for example, showing that preemption would have saved X-thousand hours of safety-critical testing time without purchasing additional hardware.
+
+## 4. CapEx (On-Prem) vs Cloud: 3-Year Comparison
+
+| Year | Demand (GPUs) | On-Premise (CapEx + OpEx) | Cloud (OpEx Only) |
+|------|---------------|---------------------------|-------------------|
+| Year 1 | 1,000 | **$56,000,000** | **$15,768,000** |
+| | | $50M Buy + $6M Power/Maint | 1k GPUs @ $1.80/hr |
+| Year 2 | 1,200 | **$17,200,000** | **$18,921,600** |
+| | | $10M New Buy + $7.2M Power/Maint | 1.2k GPUs @ $1.80/hr |
+| Year 3 | 1,440 | **$20,640,000** | **$22,705,920** |
+| | | $12M New Buy + $8.6M Power/Maint | 1.44k GPUs @ $1.80/hr |
+| **TOTAL** | — | **$93,840,000** | **$57,395,520** |
+
+### Key Observations
+
+- **Year 1:** Cloud is ~72% cheaper (no upfront CapEx)
+- **Years 2-3:** On-prem becomes competitive as infrastructure is amortized
+- **Break-even:** On-prem requires ~5+ years at stable demand to match cloud TCO
+
+### Assumptions
+
+| Parameter | On-Premise | Cloud |
+|-----------|------------|-------|
+| **Cost per GPU** | $50,000 (H100-class) | $1.80/hr (~$15,768/yr) |
+| **Infrastructure** | 20% of GPU cost (racks, networking, cooling) | Included in hourly rate |
+| **Power & Maintenance** | ~$6,000/GPU/year | Included in hourly rate |
+| **Utilization** | 100% (always on) | 100% (24/7 usage assumed) |
+| **Depreciation** | 3-year straight-line | N/A |
+| **Demand growth** | 20% YoY | 20% YoY |
+
+> **Note:** This comparison assumes 24/7 usage. Cloud becomes more attractive with variable/bursty workloads where you only pay for actual usage. On-prem wins for sustained, predictable high-utilization workloads over 3+ years.
