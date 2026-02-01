@@ -83,24 +83,43 @@ else:
 Best for detecting **gradual shifts** and identifying **when** the shift started.
 
 ```python
-def cusum_detector(data, target, threshold=5):
+import numpy as np
+
+def cusum_detector(data, baseline, target_shift=None, confidence_multiplier=4.0):
     """
-    Detect upward shift in Poisson rate.
+    Detect shift in Poisson rate with automatic parameter selection.
     
     Args:
         data: sequence of observed rates
-        target: expected rate (baseline)
-        threshold: detection threshold (higher = fewer false alarms)
+        baseline: expected rate (mean under normal conditions)
+        target_shift: minimum shift size to detect (default: 20% of baseline)
+        confidence_multiplier: controls false alarm rate (default: 4.0)
+            - 3.0 = more sensitive, more false alarms
+            - 5.0 = less sensitive, fewer false alarms
     
     Returns:
         Index where shift detected, or None
     """
+    # 1. Automatic Parameter Selection
+    if target_shift is None:
+        target_shift = 0.2 * baseline  # Default: detect 20% shift
+    
+    # Drift = Half of the shift we want to catch
+    # This centers the CUSUM to accumulate fastest for shifts of size target_shift
+    drift = target_shift / 2
+    
+    # Threshold = Multiple of the Poisson noise (sqrt of mean)
+    # For Poisson, std dev = sqrt(mean), so threshold scales with noise level
+    threshold = confidence_multiplier * np.sqrt(baseline)
+    
+    # 2. Run CUSUM
     cusum_pos = 0  # Detects increase
     cusum_neg = 0  # Detects decrease
     
     for i, value in enumerate(data):
-        cusum_pos = max(0, cusum_pos + (value - target))
-        cusum_neg = min(0, cusum_neg + (value - target))
+        # Subtract drift to reduce noise accumulation
+        cusum_pos = max(0, cusum_pos + (value - baseline - drift))
+        cusum_neg = min(0, cusum_neg + (value - baseline + drift))
         
         if cusum_pos > threshold:
             print(f"Upward shift detected at observation {i}")
@@ -111,11 +130,17 @@ def cusum_detector(data, target, threshold=5):
     
     return None
 
-# Example: hourly job counts
+# Example: baseline 100 jobs/hour, detect 20% shifts
 hourly_counts = [98, 102, 105, 110, 125, 130, 128, 135, 140]
-baseline = 100
-cusum_detector(hourly_counts, target=baseline, threshold=50)
+cusum_detector(hourly_counts, baseline=100)
 ```
+
+### Parameter Selection Logic
+
+| Parameter | Formula | Purpose |
+|-----------|---------|---------|
+| `drift` | `target_shift / 2` | Filters out noise; only accumulates for real shifts |
+| `threshold` | `k × √baseline` | Scales with Poisson noise; k controls sensitivity |
 
 ### CUSUM vs Control Chart
 
@@ -124,6 +149,76 @@ cusum_detector(hourly_counts, target=baseline, threshold=50)
 | Detects large sudden shifts | ✓ Fast | Slower |
 | Detects small gradual shifts | Poor | ✓ Good |
 | Pinpoints change time | No | ✓ Yes |
+
+---
+
+## Method 4: EWMA (Exponentially Weighted Moving Average)
+
+Best for **adaptive baseline** that evolves with your data. Good for workloads with trends or slow drift.
+
+```python
+import numpy as np
+
+def ewma_detector(data, alpha=0.2, threshold=3.0):
+    """
+    EWMA-based shift detector with adaptive baseline.
+    
+    Weight decay (no fixed window - all history contributes):
+        Current:   α
+        Previous:  α(1-α)
+        2 back:    α(1-α)²
+        3 back:    α(1-α)³  ...and so on
+    
+    Effective window ≈ 2/α - 1 (e.g., α=0.2 → ~9 observations)
+    
+    Args:
+        data: sequence of observed rates
+        alpha: smoothing factor (0.1-0.3 typical). Higher = more reactive
+        threshold: number of std devs for alert
+    
+    Returns:
+        Index where shift detected, or None
+    """
+    ewma = data[0]
+    ewma_var = 0
+    
+    for i, value in enumerate(data[1:], 1):
+        # Update EWMA (exponentially weighted mean)
+        ewma = alpha * value + (1 - alpha) * ewma
+        
+        # Update EWMA variance estimate
+        ewma_var = alpha * (value - ewma)**2 + (1 - alpha) * ewma_var
+        ewma_std = np.sqrt(ewma_var)
+        
+        # Check for deviation
+        if ewma_std > 0:
+            z_score = abs(value - ewma) / ewma_std
+            if z_score > threshold:
+                print(f"Shift detected at observation {i}, z={z_score:.2f}")
+                return i
+    
+    return None
+
+# Example
+hourly_counts = [100, 102, 98, 105, 101, 140, 145, 150, 148]
+ewma_detector(hourly_counts, alpha=0.2, threshold=3.0)
+```
+
+### Choosing Alpha (α)
+
+| Alpha | Behavior | Use When |
+|-------|----------|----------|
+| 0.1 | Slow adaptation, smooth | Stable workload, avoid false alarms |
+| 0.2 | Balanced | General purpose |
+| 0.3+ | Fast adaptation, reactive | Rapidly changing workload |
+
+### EWMA vs CUSUM
+
+| Feature | CUSUM | EWMA |
+|---------|-------|------|
+| Baseline | Fixed target | Adaptive (evolves) |
+| Best for | Detecting deviation from known baseline | Tracking evolving workload |
+| False positives with trend | More likely | Less likely |
 
 ---
 
@@ -136,6 +231,9 @@ Is the rate different between two periods?
 Need real-time monitoring for anomalies?
   → Control Chart (c-chart)
 
-Need to detect gradual drift over time?
-  → CUSUM or EWMA
+Need to detect shift from a KNOWN baseline?
+  → CUSUM
+
+Need adaptive baseline that evolves with workload?
+  → EWMA
 ```

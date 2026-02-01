@@ -234,3 +234,10 @@ residual = result.resid  # Actual - Seasonal - Trend
 | Z-score | $(X - \lambda) / \sqrt{\lambda}$ |
 
 **Rule of thumb**: If observed count is more than $3\sqrt{\lambda}$ away from $\lambda$, it's likely a real shift (p < 0.003).
+
+---
+
+## Related Topics
+
+- [Log-Normal Distribution](lognormal.md) - For continuous positive data (sizes, latencies)
+- [Shift Detection](shift_detection.md) - Detecting changes in distribution parameters

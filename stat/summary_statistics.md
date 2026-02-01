@@ -10,8 +10,227 @@
 | **Coefficient of Variation** | $CV = \frac{s_x}{\bar{x}}$ | $\frac{\sigma_x}{\mu_x}$ |
 | **Covariance** | $s_{xy} = \frac{1}{n-1}\sum_{i=1}^{n}(x_i - \bar{x})(y_i - \bar{y})$ | $\sigma_{xy}$ |
 | **Correlation** | $r = \frac{s_{xy}}{s_x \cdot s_y}$ | $\rho$ |
+| **Median** | Middle value when sorted | $\tilde{\mu}$ or $M$ |
+| **Mode** | Most frequent value | $Mo$ |
+| **Skewness** | $\frac{1}{n}\sum\left(\frac{x_i - \bar{x}}{s}\right)^3$ | $\gamma_1$ |
+| **Kurtosis** | $\frac{1}{n}\sum\left(\frac{x_i - \bar{x}}{s}\right)^4 - 3$ | $\gamma_2$ |
 
 > **Note:** Sample formulas use $n-1$ (Bessel's correction) for unbiased estimation. Population formulas use $n$.
+
+---
+
+## Median
+
+The **median** is the middle value when data is sorted. It divides the dataset into two equal halves.
+
+$$\text{Median} = \begin{cases} x_{(n+1)/2} & \text{if } n \text{ is odd} \\ \frac{x_{n/2} + x_{n/2+1}}{2} & \text{if } n \text{ is even} \end{cases}$$
+
+### Why Use Median?
+
+- **Robust to outliers**: Unlike the mean, extreme values don't pull the median
+- **Better for skewed data**: For log-normal, Pareto, or income data, median represents the "typical" value
+- **Always exists**: Works for any ordinal data
+
+```python
+import numpy as np
+
+data = [1, 2, 3, 4, 100]  # Outlier at 100
+
+mean = np.mean(data)      # 22.0 (pulled by outlier)
+median = np.median(data)  # 3.0 (robust)
+```
+
+---
+
+## Mode
+
+The **mode** is the most frequently occurring value in a dataset.
+
+- A distribution can be **unimodal** (one peak), **bimodal** (two peaks), or **multimodal**
+- For continuous data, mode is the peak of the probability density function
+
+```python
+from scipy import stats
+
+data = [1, 2, 2, 3, 3, 3, 4, 5]
+mode_result = stats.mode(data, keepdims=True)
+print(f"Mode: {mode_result.mode[0]}, Count: {mode_result.count[0]}")
+# Mode: 3, Count: 3
+```
+
+---
+
+## Skewness
+
+**Skewness** measures the asymmetry of a distribution around its mean.
+
+$$\text{Skewness} = \frac{1}{n}\sum_{i=1}^{n}\left(\frac{x_i - \bar{x}}{s}\right)^3$$
+
+| Value | Interpretation |
+|-------|----------------|
+| = 0 | Symmetric (like Normal) |
+| > 0 | Right-skewed (long tail to the right) |
+| < 0 | Left-skewed (long tail to the left) |
+
+```
+Right-skewed (positive):        Left-skewed (negative):
+
+    ▄█▄                                      ▄█▄
+   █████▄                                 ▄█████
+  ████████▄▄▄                       ▄▄▄████████
+━━━━━━━━━━━━━━━━━━━              ━━━━━━━━━━━━━━━━━━━
+     ↑                                         ↑
+   median                                   median
+        ←── long tail                long tail ──→
+```
+
+```python
+from scipy.stats import skew
+
+data = [1, 2, 3, 4, 5, 6, 7, 8, 100]  # Right-skewed
+print(f"Skewness: {skew(data):.2f}")  # Positive value
+```
+
+---
+
+## Kurtosis
+
+**Kurtosis** measures the "tailedness" of a distribution — how much probability mass is in the tails vs the center.
+
+$$\text{Excess Kurtosis} = \frac{1}{n}\sum_{i=1}^{n}\left(\frac{x_i - \bar{x}}{s}\right)^4 - 3$$
+
+The "-3" makes it relative to the Normal distribution (which has kurtosis = 3).
+
+| Excess Kurtosis | Name | Interpretation |
+|-----------------|------|----------------|
+| = 0 | Mesokurtic | Normal-like tails |
+| > 0 | Leptokurtic | Heavy tails, more outliers |
+| < 0 | Platykurtic | Light tails, fewer outliers |
+
+### Visual: Kurtosis Comparison
+
+```
+Platykurtic (< 0):     Mesokurtic (= 0):      Leptokurtic (> 0):
+Light tails            Normal                  Heavy tails
+
+    ▄▄▄▄▄▄▄                 ▄█▄                    ▄█▄
+  ▄██████████▄            ▄█████▄                ██████
+ ████████████████       ▄█████████▄           ▄█████████▄
+━━━━━━━━━━━━━━━━━━━   ━━━━━━━━━━━━━━━━━━   ━━━▄▄━━━━━━━━▄▄━━━
+                                              ↑         ↑
+                                           fat tails (outliers)
+```
+
+### Why Kurtosis Matters
+
+- **High kurtosis** = expect more extreme values (P99 >> P50)
+- **Critical for capacity planning**: A few "elephant" requests can overwhelm resources
+- **Risk assessment**: High kurtosis means higher probability of rare extreme events
+
+```python
+from scipy.stats import kurtosis
+import numpy as np
+
+# Normal distribution
+normal_data = np.random.normal(0, 1, 10000)
+print(f"Normal kurtosis: {kurtosis(normal_data):.2f}")  # ≈ 0
+
+# Heavy-tailed (e.g., log-normal)
+lognormal_data = np.random.lognormal(0, 1, 10000)
+print(f"Log-normal kurtosis: {kurtosis(lognormal_data):.2f}")  # >> 0
+
+# Rule of thumb for capacity planning
+k = kurtosis(lognormal_data)
+if k > 3:
+    print("⚠️ Heavy tails detected - plan for extreme outliers")
+elif k > 1:
+    print("Moderate tails - monitor P99")
+else:
+    print("Light tails - standard planning OK")
+```
+
+### Quick Reference
+
+| Distribution | Excess Kurtosis | Tail Behavior |
+|--------------|-----------------|---------------|
+| Uniform | -1.2 | No tails (bounded) |
+| Normal | 0 | Baseline |
+| Exponential | 6 | Moderate heavy tail |
+| Log-normal | Varies (often > 10) | Heavy tail |
+| Pareto | Very high | Extremely heavy |
+
+---
+
+## Mean vs Median vs Mode
+
+For symmetric distributions (like Normal), all three are equal. For skewed distributions, they differ:
+
+### Right-Skewed (Positive Skew)
+
+```
+Mode < Median < Mean
+
+        Mode
+         ↓
+         ▄█▄
+        █████▄
+       ████████▄▄▄▄▄
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+             ↑        ↑
+           Median   Mean
+           
+Examples: Income, file sizes, latencies, execution times
+```
+
+### Left-Skewed (Negative Skew)
+
+```
+Mean < Median < Mode
+
+                              Mode
+                               ↓
+                             ▄█▄
+                          ▄█████
+                 ▄▄▄▄▄████████
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         ↑        ↑
+       Mean    Median
+
+Examples: Age at retirement, test scores with ceiling
+```
+
+### Which to Use?
+
+| Scenario | Best Measure | Why |
+|----------|--------------|-----|
+| Symmetric data | Mean | All three are equal, mean is most efficient |
+| Skewed data | Median | Robust to outliers, represents "typical" |
+| Categorical data | Mode | Only option for non-numeric |
+| Capacity planning | Percentiles (P90, P99) | Need to handle tail cases |
+| Log-normal data | Median = $e^{\mu}$ | Mean is inflated by heavy tail |
+
+### Log-Normal Example
+
+For log-normal distribution with parameters μ and σ:
+
+| Statistic | Formula | Relationship |
+|-----------|---------|--------------|
+| Mode | $e^{\mu - \sigma^2}$ | Smallest |
+| Median | $e^{\mu}$ | Middle |
+| Mean | $e^{\mu + \sigma^2/2}$ | Largest |
+
+```python
+import numpy as np
+
+# Log-normal parameters
+mu, sigma = 3.0, 1.0
+
+mode = np.exp(mu - sigma**2)        # 7.4
+median = np.exp(mu)                  # 20.1
+mean = np.exp(mu + sigma**2 / 2)     # 33.1
+
+print(f"Mode: {mode:.1f} < Median: {median:.1f} < Mean: {mean:.1f}")
+```
 
 ---
 
@@ -41,6 +260,18 @@ cov_xy = cov_matrix[0, 1]              # Extract covariance
 # Correlation (returns 2x2 matrix)
 corr_matrix = np.corrcoef(x, y)        # [[1, r], [r, 1]]
 corr_xy = corr_matrix[0, 1]            # Extract correlation coefficient
+
+# Median and Mode
+median_x = np.median(x)                # Median
+
+from scipy import stats
+mode_result = stats.mode(x, keepdims=True)
+mode_x = mode_result.mode[0]           # Mode
+
+# Skewness and Kurtosis
+from scipy.stats import skew, kurtosis
+skewness_x = skew(x)                   # Skewness (0 = symmetric)
+kurtosis_x = kurtosis(x)               # Excess kurtosis (0 = normal-like)
 ```
 
 ---
