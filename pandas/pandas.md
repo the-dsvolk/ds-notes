@@ -317,13 +317,20 @@ df.groupby(df['timestamp'].dt.dayofweek)['traffic'].sum()
 # Requires DatetimeIndex
 df = df.set_index('timestamp')
 
-# Resample to hourly
-df.resample('H').sum()
+# Resample to hourly and assign back
+hourly_df = df.resample('H').sum().reset_index()
 
-# Resample to daily
-df.resample('D').mean()
+# Resample to daily and assign back
+daily_df = df.resample('D').mean().reset_index()
 
-# Common frequencies: 'T'=minute, 'H'=hour, 'D'=day, 'W'=week, 'M'=month
+# Multiple aggregations with named columns
+daily_stats = df.resample('D').agg(
+    total=('value', 'sum'),
+    average=('value', 'mean'),
+    count=('value', 'count')
+).reset_index()
+
+# Common frequencies: 'min'=minute, 'h'=hour, 'D'=day, 'W'=week, 'ME'=month-end
 ```
 
 ### Example: Daily Summary from Timestamped Logs
